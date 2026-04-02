@@ -1,0 +1,12 @@
+google-api-python-client
+pandas
+numpy
+matplotlib
+seaborn
+scikit-learn
+xgboost
+isodate
+python-dotenv
+flask
+joblib
+emoji

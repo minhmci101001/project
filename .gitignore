@@ -1,0 +1,17 @@
+# Mã khóa (API Keys) - Cực kì quan trọng
+.env
+
+# Thư mục hệ thống & Python
+__pycache__/
+*.pyc
+
+# Các file mô hình nặng
+models/*.joblib
+
+# Các môi trường ảo (ví dụ nếu có)
+venv/
+env/
+.venv/
+
+# Thư mục tạp
+.DS_Store

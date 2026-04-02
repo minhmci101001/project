@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dự đoán YouTube Trending Tiên Tiến (AI)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: #0f172a;
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Abstract glowing background shapes */
+        .shape-1,
+        .shape-2 {
+            position: absolute;
+            filter: blur(80px);
+            z-index: -1;
+            border-radius: 50%;
+            animation: move 15s ease-in-out infinite alternate;
+        }
+
+        .shape-1 {
+            width: 400px;
+            height: 400px;
+            background: rgba(236, 72, 153, 0.4);
+            top: -100px;
+            left: -100px;
+        }
+
+        .shape-2 {
+            width: 500px;
+            height: 500px;
+            background: rgba(59, 130, 246, 0.4);
+            bottom: -150px;
+            right: -100px;
+            animation-delay: -5s;
+        }
+
+        @keyframes move {
+            0% {
+                transform: translateY(0) scale(1);
+            }
+
+            100% {
+                transform: translateY(50px) scale(1.1);
+            }
+        }
+
+        /* App Container (Glassmorphism) */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 900px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #f0abfc, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        /* Main layout split */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Form Inputs */
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .form-control {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .form-control label {
+            font-size: 0.9rem;
+            color: #cbd5e1;
+            font-weight: 500;
+        }
+
+        .form-control input,
+        .form-control select {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control input:focus,
+        .form-control select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+        }
+
+        .row-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .btn-predict {
+            background: linear-gradient(135deg, #6366f1, #3b82f6);
+            color: white;
+            border: none;
+            padding: 1rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+            box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-predict:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px -5px rgba(59, 130, 246, 0.5);
+        }
+
+        .btn-predict:active {
+            transform: translateY(0);
+        }
+
+        /* Results Panel */
+        .result-panel {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 16px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .loading-ring {
+            display: none;
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        #result-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .status-badge {
+            font-size: 1.5rem;
+            font-weight: 700;
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            margin-bottom: 1rem;
+        }
+
+        .status-trending {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.4);
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
+        }
+
+        .status-normal {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+        }
+
+        /* Probability Gauge */
+        .gauge-container {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            height: 12px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .gauge-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #f87171, #facc15, #4ade80);
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .prob-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+            color: #e2e8f0;
+        }
+
+        /* Title Features Pills */
+        .title-features-container {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+        }
+
+        .feature-pill {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #cbd5e1;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .feature-pill:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .feature-pill.active {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: #3b82f6;
+            color: #60a5fa;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="shape-1"></div>
+    <div class="shape-2"></div>
+
+    <div class="glass-panel">
+        <div class="header">
+            <h1>Predict YouTube Trending</h1>
+            <p>Artificial Intelligence (Random Forest) with NLP Analysis for Title</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Left Panel: Form -->
+            <div class="input-group">
+                <!-- Tiêu đề (Thay đổi lớn nhất) -->
+                <div class="form-control" style="grid-column: span 2;">
+                    <label>Title ✏️</label>
+                    <input type="text" id="title" placeholder="Example: Will AI take programmers' jobs?! 🤔" value="">
+                    <label style="margin-top: 0.8rem;">Title Features 🎛️</label>
+                    <div class="title-features-container">
+                        <div class="feature-pill" id="pill-emoji" onclick="toggleFeature('emoji')">
+                            <span class="icon">😊</span> Has Emoji
+                        </div>
+                        <div class="feature-pill" id="pill-question" onclick="toggleFeature('question')">
+                            <span class="icon">❓</span> Has Question
+                        </div>
+                        <div class="feature-pill" id="pill-number" onclick="toggleFeature('number')">
+                            <span class="icon">🔢</span> Has Number
+                        </div>
+                    </div>
+                    <small style="color: #64748b; font-size: 0.8rem; margin-top: 0.5rem;">If empty, AI will read your
+                        title.</small>
+                </div>
+
+                <div class="row-inputs">
+                    <div class="form-control">
+                        <label>Category 🎬</label>
+                        <select id="category_id">
+                            <option value="10">Music</option>
+                            <option value="20">Gaming</option>
+                            <option value="22">People/Blogs</option>
+                            <option value="23">Comedy</option>
+                            <option value="24" selected>Entertainment</option>
+                            <option value="25">News</option>
+                            <option value="27">Education</option>
+                            <option value="28">Tech</option>
+                        </select>
+                    </div>
+                    <div class="form-control">
+                        <label>Video Duration (seconds) ⏳</label>
+                        <input type="number" id="duration_seconds" value="600">
+                    </div>
+                </div>
+
+                <div class="row-inputs">
+                    <div class="form-control">
+                        <label>Subscribers 👤</label>
+                        <input type="number" id="subscriber_count" value="1500000">
+                    </div>
+                    <div class="form-control">
+                        <label>Tags Count 🏷️</label>
+                        <input type="number" id="tags_count" value="15">
+                    </div>
+                </div>
+
+
+                <div class="row-inputs">
+                    <div class="form-control">
+                        <label>Publish Hour 🕒</label>
+                        <select id="publish_hour">
+                            <option value="0">0:00 (Midnight)</option>
+                            <option value="1">1:00 (Early Morning)</option>
+                            <option value="2">2:00 (Early Morning)</option>
+                            <option value="3">3:00 (Early Morning)</option>
+                            <option value="4">4:00 (Early Morning)</option>
+                            <option value="5">5:00 (Early Morning)</option>
+                            <option value="6">6:00 (Morning)</option>
+                            <option value="7">7:00 (Morning)</option>
+                            <option value="8">8:00 (Morning)</option>
+                            <option value="9">9:00 (Morning)</option>
+                            <option value="10">10:00 (Morning)</option>
+                            <option value="11">11:00 (Noon)</option>
+                            <option value="12">12:00 (Noon)</option>
+                            <option value="13">13:00 (Early Afternoon)</option>
+                            <option value="14">14:00 (Afternoon)</option>
+                            <option value="15">15:00 (Afternoon)</option>
+                            <option value="16">16:00 (Afternoon)</option>
+                            <option value="17">17:00 (Afternoon)</option>
+                            <option value="18">18:00 (Evening/Rush Hour)</option>
+                            <option value="19" selected>19:00 (Evening/Prime Time)</option>
+                            <option value="20">20:00 (Evening/Entertainment)</option>
+                            <option value="21">21:00 (Evening/Entertainment)</option>
+                            <option value="22">22:00 (Night/Entertainment)</option>
+                            <option value="23">23:00 (Late Night)</option>
+                        </select>
+                    </div>
+                    <div class="form-control">
+                        <label>Day of Week 📅</label>
+                        <select id="day_of_week">
+                            <option value="0">Monday</option>
+                            <option value="1">Tuesday</option>
+                            <option value="2">Wednesday</option>
+                            <option value="3">Thursday</option>
+                            <option value="4" selected>Friday</option>
+                            <option value="5">Saturday</option>
+                            <option value="6">Sunday</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="btn-predict" onclick="predictTrending()">Predict Now</button>
+            </div>
+
+            <!-- Right Panel: Results -->
+            <div class="result-panel">
+                <div class="loading-ring" id="loader"></div>
+
+                <div id="result-content" style="display: none;">
+                    <div id="status-badge" class="status-badge">...</div>
+                    <p style="color: #cbd5e1; font-size: 0.95rem;">Trending Probability:</p>
+                    <div class="gauge-container">
+                        <div class="gauge-bar" id="gauge-bar"></div>
+                    </div>
+                    <div class="prob-text" id="prob-text">0.0%</div>
+                </div>
+
+                <div id="idle-content" style="text-align: center; color: #64748b;">
+                    <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"
+                        style="margin-bottom: 1rem; opacity: 0.5;">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M19.5 13.5L21 12l-1.5-1.5M19.5 3L21 4.5 19.5 6M12 21l1.5-1.5L12 18" />
+                    </svg>
+                    <p>The Random Forest model has been loaded (including Title NLP Analysis Module & Channel
+                        Algorithm).<br>Enter parameters in the area on the left to start predicting!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Quản lý trạng thái các nút Title Features
+        const uiFeatures = {
+            emoji: null,
+            question: null,
+            number: null
+        };
+
+        function toggleFeature(featureName) {
+            const pill = document.getElementById(`pill-${featureName}`);
+
+            if (uiFeatures[featureName] === null || uiFeatures[featureName] === false) {
+                // Bật
+                uiFeatures[featureName] = true;
+                pill.classList.add('active');
+            } else {
+                // Tắt (trở về null để tự động hoặc false thuần)
+                uiFeatures[featureName] = null; // Ta để null để báo hiệu "Không can thiệp"
+                pill.classList.remove('active');
+            }
+        }
+
+        function predictTrending() {
+            const titleValue = document.getElementById('title').value.trim();
+            if (!titleValue) {
+                alert("⚠️ Please enter the video title before predicting!");
+                document.getElementById('title').focus();
+                return;
+            }
+
+            // Hiển thị Loader
+            document.getElementById('idle-content').style.display = 'none';
+            document.getElementById('result-content').style.display = 'none';
+            document.getElementById('loader').style.display = 'block';
+
+            // Lấy dữ liệu
+            const data = {
+                title: document.getElementById('title').value,
+                category_id: document.getElementById('category_id').value,
+                subscriber_count: document.getElementById('subscriber_count').value,
+                duration_seconds: document.getElementById('duration_seconds').value,
+                tags_count: document.getElementById('tags_count').value,
+                publish_hour: document.getElementById('publish_hour').value,
+                day_of_week: document.getElementById('day_of_week').value,
+                ui_has_emoji: uiFeatures.emoji !== null ? uiFeatures.emoji : null,
+                ui_is_question: uiFeatures.question !== null ? uiFeatures.question : null,
+                ui_has_number: uiFeatures.number !== null ? uiFeatures.number : null
+            };
+
+            // Gửi API
+            fetch('/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+                .then(res => res.json())
+                .then(result => {
+                    setTimeout(() => {
+                        document.getElementById('loader').style.display = 'none';
+                        if (result.error) {
+                            alert("Lỗi máy chủ: " + result.error);
+                            document.getElementById('idle-content').style.display = 'block';
+                            return;
+                        }
+
+                        document.getElementById('result-content').style.display = 'flex';
+
+                        const prob = (result.probability * 100).toFixed(1);
+                        const badge = document.getElementById('status-badge');
+
+                        if (result.prediction === 1) {
+                            badge.innerText = "WILL VIRAL 🔥 (TRENDING)";
+                            badge.className = "status-badge status-trending";
+                        } else {
+                            badge.innerText = "NORMAL ❄️ (FLOP)";
+                            badge.className = "status-badge status-normal";
+                        }
+
+                        document.getElementById('gauge-bar').style.width = prob + '%';
+                        document.getElementById('prob-text').innerText = prob + '%';
+                    }, 800);
+                })
+                .catch(err => {
+                    alert("Có lỗi xảy ra kết nối mạng: " + err);
+                    document.getElementById('loader').style.display = 'none';
+                    document.getElementById('idle-content').style.display = 'block';
+                });
+        }
+    </script>
+</body>
+
+</html>
