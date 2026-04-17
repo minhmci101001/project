@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dự đoán YouTube Trending Tiên Tiến (AI)</title>
+    <title>YouTube Trending Predictor</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
@@ -314,7 +314,7 @@
         <div class="main-content">
             <!-- Left Panel: Form -->
             <div class="input-group">
-                <!-- Tiêu đề (Thay đổi lớn nhất) -->
+                <!-- Title input -->
                 <div class="form-control" style="grid-column: span 2;">
                     <label>Title ✏️</label>
                     <input type="text" id="title" placeholder="Example: Will AI take programmers' jobs?! 🤔" value="">
@@ -442,7 +442,7 @@
     </div>
 
     <script>
-        // Quản lý trạng thái các nút Title Features
+        // Manage toggle state for Title Feature pills
         const uiFeatures = {
             emoji: null,
             question: null,
@@ -453,12 +453,12 @@
             const pill = document.getElementById(`pill-${featureName}`);
 
             if (uiFeatures[featureName] === null || uiFeatures[featureName] === false) {
-                // Bật
+                // Turn on
                 uiFeatures[featureName] = true;
                 pill.classList.add('active');
             } else {
-                // Tắt (trở về null để tự động hoặc false thuần)
-                uiFeatures[featureName] = null; // Ta để null để báo hiệu "Không can thiệp"
+                // Turn off — reset to null so the AI reads the title automatically
+                uiFeatures[featureName] = null;
                 pill.classList.remove('active');
             }
         }
@@ -471,12 +471,12 @@
                 return;
             }
 
-            // Hiển thị Loader
+            // Show loader while waiting for the API response
             document.getElementById('idle-content').style.display = 'none';
             document.getElementById('result-content').style.display = 'none';
             document.getElementById('loader').style.display = 'block';
 
-            // Lấy dữ liệu
+            // Collect form data
             const data = {
                 title: document.getElementById('title').value,
                 category_id: document.getElementById('category_id').value,
@@ -490,7 +490,7 @@
                 ui_has_number: uiFeatures.number !== null ? uiFeatures.number : null
             };
 
-            // Gửi API
+            // Send prediction request
             fetch('/predict', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -501,7 +501,7 @@
                     setTimeout(() => {
                         document.getElementById('loader').style.display = 'none';
                         if (result.error) {
-                            alert("Lỗi máy chủ: " + result.error);
+                            alert("Server error: " + result.error);
                             document.getElementById('idle-content').style.display = 'block';
                             return;
                         }
@@ -524,7 +524,7 @@
                     }, 800);
                 })
                 .catch(err => {
-                    alert("Có lỗi xảy ra kết nối mạng: " + err);
+                    alert("Network error: " + err);
                     document.getElementById('loader').style.display = 'none';
                     document.getElementById('idle-content').style.display = 'block';
                 });

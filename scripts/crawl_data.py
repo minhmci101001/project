@@ -12,19 +12,19 @@ API_KEY = os.getenv('YOUTUBE_API_KEY')
 
 # Prevent running if API Key is not set
 if not API_KEY or API_KEY == "YOUR_API_KEY_HERE":
-    print("❌ LỖI: Chưa có YouTube API Key!")
-    print("👉 Hãy tạo một file tên là .env trong thư mục youtube_trending_project.")
-    print("👉 Điền nội dung sau vào file .env:")
-    print("YOUTUBE_API_KEY=Mã_API_Của_Bạn")
+    print("ERROR: YouTube API Key is missing!")
+    print("Please create a .env file in the youtube_trending_project directory.")
+    print("Add the following content to the .env file:")
+    print("YOUTUBE_API_KEY=Your_API_Key_Here")
     exit(1)
 
 # Build the YouTube API client
 youtube = build('youtube', 'v3', developerKey=API_KEY)
 
 def get_video_details(video_ids):
-    """Lấy chi tiết thống kê và siêu dữ liệu cho một danh sách ID video."""
+    """Fetch statistical details and metadata for a list of video IDs."""
     all_videos = []
-    # YouTube API cho phép tối đa 50 ID trong một lần gọi
+    # YouTube API allows a maximum of 50 IDs per request
     for i in range(0, len(video_ids), 50):
         chunk_ids = video_ids[i:i+50]
         try:
@@ -43,7 +43,7 @@ def get_video_details(video_ids):
                 duration_iso = content_details.get("duration", "PT0S")
                 duration_sec = isodate.parse_duration(duration_iso).total_seconds()
                 
-                # Trích xuất dữ liệu
+                # Extract data
                 video_data = {
                     "video_id": item["id"],
                     "title": snippet.get("title", ""),
@@ -60,13 +60,13 @@ def get_video_details(video_ids):
                 }
                 all_videos.append(video_data)
         except Exception as e:
-            print(f"Lỗi khi lấy chi tiết video: {e}")
+            print(f"Error fetching video details: {e}")
             
-    # Lấy thông tin lượng Subscriber của các kênh này
+    # Get Subscriber counts for these channels
     channel_ids = list(set([v["channel_id"] for v in all_videos if v.get("channel_id")]))
     channel_stats = {}
     
-    print(f"  👉 Đang lấy thông số (Subscriber Count) cho {len(channel_ids)} kênh YouTube...")
+    print(f"  👉 Fetching Subscriber Count for {len(channel_ids)} YouTube channels...")
     for i in range(0, len(channel_ids), 50):
         chunk_cids = channel_ids[i:i+50]
         try:
@@ -78,17 +78,17 @@ def get_video_details(video_ids):
             for item in response.get("items", []):
                 channel_stats[item["id"]] = int(item.get("statistics", {}).get("subscriberCount", 0))
         except Exception as e:
-            print(f"Lỗi khi lấy chi tiết kênh: {e}")
+            print(f"Error fetching channel details: {e}")
             
-    # Gắn subscriber_count vào từng video
+    # Attach subscriber_count to each video
     for v in all_videos:
         v["subscriber_count"] = channel_stats.get(v["channel_id"], 0)
         
     return all_videos
 
 def get_trending_videos(region_code="VN", max_results=300):
-    """Lấy danh sách các video đang làm mưa làm gió (Trending)."""
-    print(f"🚀 Bắt đầu lấy danh sách video Trending (Quốc gia: {region_code})...")
+    """Fetch a list of currently trending videos."""
+    print(f"Fetching Trending videos list (Region: {region_code})...")
     trending_videos = []
     next_page_token = None
     
@@ -110,32 +110,32 @@ def get_trending_videos(region_code="VN", max_results=300):
             if not next_page_token:
                 break
         except Exception as e:
-            print(f"Lỗi lấy video trending: {e}")
+            print(f"Error fetching trending videos: {e}")
             break
             
-    print(f"✅ Đã tìm thấy {len(trending_videos)} video Trending. Đang tải chi tiết...")
+    print(f"Found {len(trending_videos)} Trending videos. Fetching details...")
     videos_data = get_video_details(trending_videos)
     
-    # Gắn nhãn phân loại (Trending = 1)
+    # Assign classification label (Trending = 1)
     for v in videos_data:
         v["is_trending"] = 1
         
     return videos_data
 
-def get_non_trending_videos(queries=["vlog", "giải trí", "tin tức", "trò chơi", "âm nhạc", "đánh giá"], max_per_query=50):
-    """Lấy danh sách các video ngẫu nhiên (Non-Trending) để làm bộ đối chứng."""
-    print("🚀 Bắt đầu lấy danh sách video bình thường (Non-Trending)...")
+def get_non_trending_videos(queries=["vlog", "entertainment", "news", "gaming", "music", "reviews"], max_per_query=50):
+    """Fetch a list of random (Non-Trending) videos for the control group."""
+    print("Fetching Non-Trending videos list...")
     non_trending_ids = []
     
     for query in queries:
-        print(f"  👉 Đang tìm kiếm từ khóa: {query}")
+        print(f"Searching for keyword: {query}")
         try:
-            # Dùng search để tìm video mới
+            # Use search to find new videos
             request = youtube.search().list(
                 part="id",
                 q=query,
                 type="video",
-                order="date", # Lấy video gần đây (chưa hoặc không lọt trending)
+                order="date", # Get recent videos (that haven't/won't trend)
                 maxResults=max_per_query
             )
             response = request.execute()
@@ -144,42 +144,42 @@ def get_non_trending_videos(queries=["vlog", "giải trí", "tin tức", "trò c
                 non_trending_ids.append(item["id"]["videoId"])
                 
         except Exception as e:
-            print(f"Lỗi khi tìm từ khóa '{query}': {e}")
+            print(f"Error searching for keyword '{query}': {e}")
             continue
                 
-    # Lọc trùng lặp
+    # Remove duplicates
     non_trending_ids = list(set(non_trending_ids))
-    print(f"✅ Đã tìm thấy {len(non_trending_ids)} video Non-Trending. Đang tải chi tiết...")
+    print(f"Found {len(non_trending_ids)} Non-Trending videos. Fetching details...")
     
     videos_data = get_video_details(non_trending_ids)
     
-    # Gắn nhãn phân loại (Trending = 0)
+    # Assign classification label (Trending = 0)
     for v in videos_data:
         v["is_trending"] = 0
         
     return videos_data
 
 if __name__ == "__main__":
-    # Đảm bảo thư mục data tồn tại
+    # Ensure data directory exists
     data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
     os.makedirs(data_dir, exist_ok=True)
     
-    # 1. Lấy dữ liệu Trending
+    # 1. Fetch Trending data
     trending_data = get_trending_videos(region_code="VN", max_results=200)
     
-    # 2. Lấy dữ liệu Non-Trending
+    # 2. Fetch Non-Trending data
     non_trending_data = get_non_trending_videos(max_per_query=40)
     
-    # 3. Gộp lại và tạo DataFrame
+    # 3. Combine and create DataFrame
     all_data = trending_data + non_trending_data
     df = pd.DataFrame(all_data)
     
-    # 4. Lưu ra file CSV
+    # 4. Save to CSV file
     output_path = os.path.join(data_dir, "youtube_data.csv")
-    df.to_csv(output_path, index=False, encoding="utf-8-sig") # utf-8-sig cho Excel đọc đúng tiếng Việt
+    df.to_csv(output_path, index=False, encoding="utf-8-sig") # utf-8-sig to display properly in Excel
     
-    print(f"\n🎉 HOÀN THÀNH!")
-    print(f"📊 Đã tạo dataset với tổng {len(df)} video.")
-    print(f"  - TinTrending: {len(trending_data)}")
-    print(f"  - Bình thường: {len(non_trending_data)}")
-    print(f"📁 Dữ liệu được lưu tại: {output_path}")
+    print(f"COMPLETED!")
+    print(f"Created dataset with total {len(df)} videos.")
+    print(f"  - Trending: {len(trending_data)}")
+    print(f"  - Non-Trending: {len(non_trending_data)}")
+    print(f"Data saved to: {output_path}")
