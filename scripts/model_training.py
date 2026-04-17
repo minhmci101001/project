@@ -196,7 +196,7 @@ def _plot_confusion_matrix(y_test, y_pred_rf, output_dir):
     for i in range(2):
         for j in range(2):
             ax.text(j + 0.5, i + 0.75, labels[i][j],
-                    ha='center', va='center', fontsize=9, color='white', alpha=0.7)
+                    ha='center', va='center', fontsize=14, fontweight='bold', color='blue', alpha=0.9)
 
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, "08_confusion_matrix.png"), dpi=300)
@@ -214,7 +214,7 @@ def _plot_roc_curve(y_test, y_prob_base, y_prob_rf, auc_base, auc_rf, output_dir
             label=f"Logistic Regression (AUC = {auc_base:.3f})")
     ax.plot(fpr_rf,   tpr_rf,   color=PALETTE['RF'],       lw=2,
             label=f"Random Forest      (AUC = {auc_rf:.3f})")
-    ax.plot([0, 1], [0, 1], 'w--', lw=1, label="Random Classifier (AUC = 0.500)")
+    ax.plot([0, 1], [0, 1], color='gray', linestyle='--', lw=1, label="Random Classifier (AUC = 0.500)")
 
     ax.set_title("ROC Curve — Model Comparison", fontsize=16, fontweight='bold', pad=20)
     ax.set_xlabel("False Positive Rate", fontsize=12)
